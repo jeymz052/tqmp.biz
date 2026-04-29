@@ -14,223 +14,164 @@ export default function CartDrawer() {
     setIsCartOpen,
   } = useCart();
 
-  if (!isCartOpen) return null;
+  if (!isCartOpen) {
+    return null;
+  }
 
   return (
     <>
-      {/* Overlay */}
       <div
+        className="cart-drawer-overlay"
         onClick={() => setIsCartOpen(false)}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(4px)",
-          zIndex: 200,
-          animation: "fadeIn 0.2s ease",
-        }}
+        aria-hidden="true"
       />
 
-      {/* Drawer */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          width: "420px",
-          maxWidth: "100vw",
-          height: "100vh",
-          background: "white",
-          zIndex: 201,
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "-8px 0 30px rgba(0,0,0,0.1)",
-          animation: "slideInRight 0.3s ease",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "20px 24px",
-            borderBottom: "1px solid #eee",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h2
+      <aside className="cart-drawer" aria-label="Shopping cart">
+        <div className="cart-drawer-header">
+          <div
             style={{
-              fontFamily: "'Outfit', sans-serif",
-              fontSize: "1.3rem",
-              fontWeight: 700,
-              color: "#1a1a1a",
-            }}
-          >
-            Shopping Cart ({totalItems})
-          </h2>
-          <button
-            onClick={() => setIsCartOpen(false)}
-            style={{
-              background: "#f5f5f5",
-              border: "none",
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              cursor: "pointer",
-              fontSize: "1rem",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              gap: "12px",
             }}
           >
-            ✕
-          </button>
+            <div>
+              <p className="eyebrow" style={{ marginBottom: "8px" }}>
+                Shopping cart
+              </p>
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "2rem",
+                  lineHeight: 0.95,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {totalItems} item{totalItems === 1 ? "" : "s"}
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="control-button"
+              style={{ color: "var(--tqmp-red)", borderColor: "rgba(23,23,23,0.1)" }}
+              onClick={() => setIsCartOpen(false)}
+              aria-label="Close cart"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        {/* Items */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+        <div className="cart-drawer-body">
           {items.length === 0 ? (
             <div
               style={{
+                padding: "40px 8px",
                 textAlign: "center",
-                padding: "60px 0",
-                color: "#999",
               }}
             >
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ccc"
-                strokeWidth="1.5"
-                style={{ margin: "0 auto 16px" }}
-              >
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-              <p style={{ fontWeight: 500 }}>Your cart is empty</p>
-              <p style={{ fontSize: "0.85rem", marginTop: "4px" }}>
-                Add products to get started
+              <p className="eyebrow" style={{ marginBottom: "12px" }}>
+                Nothing added yet
+              </p>
+              <p style={{ color: "rgba(23,23,23,0.62)", lineHeight: 1.7 }}>
+                Configure a product from the shop and it will appear here with
+                its selected size, thickness, and finish.
               </p>
             </div>
           ) : (
-            items.map((item, idx) => (
-              <div
-                key={`${item.id}-${item.size}-${idx}`}
-                style={{
-                  display: "flex",
-                  gap: "14px",
-                  padding: "16px 0",
-                  borderBottom: "1px solid #f0f0f0",
-                }}
-              >
-                {/* Product image placeholder */}
-                <div
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    borderRadius: "10px",
-                    background: "linear-gradient(135deg, #f5f5f5, #eee)",
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  🔲
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h4
-                    style={{
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {item.name}
-                  </h4>
-                  <p style={{ fontSize: "0.75rem", color: "#888", marginBottom: "8px" }}>
-                    {item.size} · {item.thickness} · {item.category}
-                  </p>
+            items.map((item) => (
+              <div className="cart-line" key={item.lineId}>
+                <div className="cart-thumb" aria-hidden="true" />
+                <div>
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
                       justifyContent: "space-between",
+                      gap: "12px",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0",
-                        border: "1px solid #e0e0e0",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <button
-                        onClick={() =>
-                          updateQuantity(item.id, item.quantity - 1)
-                        }
+                    <div>
+                      <p className="pill" style={{ marginBottom: "8px", width: "fit-content" }}>
+                        {item.category}
+                      </p>
+                      <h3
                         style={{
-                          width: "28px",
-                          height: "28px",
-                          border: "none",
-                          background: "#f9f9f9",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
+                          margin: 0,
+                          fontSize: "1rem",
+                          fontWeight: 800,
                         }}
+                      >
+                        {item.name}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(item.lineId)}
+                      style={{
+                        border: 0,
+                        background: "transparent",
+                        color: "rgba(23,23,23,0.5)",
+                        cursor: "pointer",
+                        fontSize: "1.2rem",
+                        lineHeight: 1,
+                      }}
+                      aria-label={`Remove ${item.name} from cart`}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <p
+                    style={{
+                      margin: "10px 0 12px",
+                      color: "rgba(23,23,23,0.62)",
+                      fontSize: "0.92rem",
+                    }}
+                  >
+                    {item.size} · {item.thickness} · {item.finish}
+                  </p>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "16px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div className="cart-qty">
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.lineId, item.quantity - 1)}
+                        aria-label={`Decrease quantity for ${item.name}`}
                       >
                         −
                       </button>
                       <span
                         style={{
-                          width: "32px",
+                          minWidth: "36px",
                           textAlign: "center",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
+                          fontWeight: 800,
                         }}
                       >
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1)
-                        }
-                        style={{
-                          width: "28px",
-                          height: "28px",
-                          border: "none",
-                          background: "#f9f9f9",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                        }}
+                        type="button"
+                        onClick={() => updateQuantity(item.lineId, item.quantity + 1)}
+                        aria-label={`Increase quantity for ${item.name}`}
                       >
                         +
                       </button>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ fontWeight: 700, color: "#8B1A1A", fontSize: "0.9rem" }}>
-                        ₱{(item.price * item.quantity).toLocaleString()}
-                      </span>
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#ccc",
-                          fontSize: "1rem",
-                        }}
-                      >
-                        🗑
-                      </button>
-                    </div>
+
+                    <strong style={{ color: "var(--tqmp-red)", fontSize: "1rem" }}>
+                      PHP {(item.price * item.quantity).toLocaleString()}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -238,74 +179,51 @@ export default function CartDrawer() {
           )}
         </div>
 
-        {/* Footer */}
         {items.length > 0 && (
-          <div
-            style={{
-              padding: "20px 24px",
-              borderTop: "1px solid #eee",
-              background: "#fafafa",
-            }}
-          >
+          <div className="cart-drawer-footer">
             <div
               style={{
                 display: "flex",
+                alignItems: "center",
                 justifyContent: "space-between",
+                gap: "16px",
                 marginBottom: "16px",
               }}
             >
-              <span style={{ fontWeight: 500, color: "#555" }}>Total</span>
-              <span
+              <span style={{ color: "rgba(23,23,23,0.68)", fontWeight: 700 }}>Total</span>
+              <strong
                 style={{
-                  fontWeight: 800,
-                  fontSize: "1.2rem",
-                  color: "#8B1A1A",
+                  color: "var(--tqmp-red)",
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "2rem",
+                  lineHeight: 0.95,
+                  letterSpacing: "0.04em",
                 }}
               >
-                ₱{totalPrice.toLocaleString()}
-              </span>
+                PHP {totalPrice.toLocaleString()}
+              </strong>
             </div>
-            <button
-              style={{
-                width: "100%",
-                padding: "14px",
-                background: "linear-gradient(135deg, #8B1A1A, #A52525)",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                marginBottom: "8px",
-                transition: "all 0.2s",
-              }}
-            >
-              Proceed to Checkout
+
+            <button type="button" className="btn-solid" style={{ width: "100%" }}>
+              Proceed to Inquiry Checkout
             </button>
             <button
+              type="button"
               onClick={clearCart}
               style={{
                 width: "100%",
-                padding: "10px",
-                background: "none",
-                color: "#999",
-                border: "none",
-                fontSize: "0.8rem",
+                marginTop: "10px",
+                border: 0,
+                background: "transparent",
+                color: "rgba(23,23,23,0.56)",
                 cursor: "pointer",
               }}
             >
-              Clear Cart
+              Clear cart
             </button>
           </div>
         )}
-      </div>
-
-      <style jsx global>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
+      </aside>
     </>
   );
 }

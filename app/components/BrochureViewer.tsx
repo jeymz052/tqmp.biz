@@ -1,61 +1,79 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+
+export interface BrochurePage {
+  title: string;
+  subtitle: string;
+  body: string[];
+  bullets: string[];
+  image?: string;
+}
 
 interface BrochureViewerProps {
-  images: string[];
+  pages: BrochurePage[];
   title: string;
 }
 
-export default function BrochureViewer({ images, title }: BrochureViewerProps) {
+export default function BrochureViewer({
+  pages,
+  title,
+}: BrochureViewerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [spreadIndex, setSpreadIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  const totalPages = images.length;
+  const totalSpreads = Math.ceil(pages.length / 2);
+  const currentPages = useMemo(
+    () => pages.slice(spreadIndex * 2, spreadIndex * 2 + 2),
+    [pages, spreadIndex],
+  );
 
-  const nextPage = () => {
-    if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1);
-  };
-  const prevPage = () => {
-    if (currentPage > 0) setCurrentPage(currentPage - 1);
-  };
-  const zoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
-  const zoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
-
-  const toggleFullscreen = () => {
-    if (!isFullscreen && containerRef.current) {
-      containerRef.current.requestFullscreen?.();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
+  useEffect(() => {
+    function syncFullscreenState() {
+      setIsFullscreen(Boolean(document.fullscreenElement));
     }
-  };
+
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+    };
+  }, []);
+
+  function closeViewer() {
+    setIsOpen(false);
+    setSpreadIndex(0);
+    setZoom(1);
+  }
+
+  function toggleFullscreen() {
+    if (!overlayRef.current) {
+      return;
+    }
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+
+    overlayRef.current.requestFullscreen?.();
+  }
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          background: "linear-gradient(135deg, #8B1A1A, #A52525)",
-          color: "white",
-          padding: "14px 32px",
-          borderRadius: "12px",
-          border: "none",
-          fontWeight: 600,
-          fontSize: "1rem",
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "10px",
-          transition: "all 0.3s",
-          boxShadow: "0 4px 15px rgba(139,26,26,0.3)",
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <button type="button" className="btn-solid brochure-button" onClick={() => setIsOpen(true)}>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
@@ -65,266 +83,135 @@ export default function BrochureViewer({ images, title }: BrochureViewerProps) {
   }
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.92)",
-        backdropFilter: "blur(8px)",
-        zIndex: 300,
-        display: "flex",
-        flexDirection: "column",
-        animation: "fadeIn 0.3s ease",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "12px 24px",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <h3 style={{ color: "white", fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: "1.1rem" }}>
-          📖 {title}
-        </h3>
+    <div className="brochure-overlay" ref={overlayRef}>
+      <div className="brochure-header">
+        <div>
+          <p className="eyebrow" style={{ color: "#d7b163", marginBottom: "8px" }}>
+            Digital brochure
+          </p>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              lineHeight: 0.94,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            {title}
+          </h2>
+        </div>
+
         <button
-          onClick={() => { setIsOpen(false); setZoom(1); setCurrentPage(0); }}
-          style={{
-            background: "rgba(255,255,255,0.1)",
-            border: "none",
-            color: "white",
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            cursor: "pointer",
-            fontSize: "1.1rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          type="button"
+          className="control-button"
+          onClick={closeViewer}
+          aria-label="Close brochure"
         >
-          ✕
+          ×
         </button>
       </div>
 
-      {/* Viewer area */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "auto",
-          padding: "20px",
-          position: "relative",
-        }}
-      >
-        {/* Prev arrow */}
-        {currentPage > 0 && (
+      <div className="brochure-stage">
+        <div className="brochure-spread" style={{ transform: `scale(${zoom})` }}>
+          {currentPages.map((page, index) => (
+            <article
+              className={`brochure-page ${index === 0 ? "is-left" : "is-right"}`}
+              key={`${page.title}-${index}`}
+            >
+              {page.image && (
+                <div className="brochure-page-cover">
+                  <Image
+                    src={page.image}
+                    alt={page.title}
+                    fill
+                    sizes="(max-width: 720px) 82vw, 39vw"
+                    style={{ objectFit: "cover" }}
+                  />
+                  <div className="brochure-cover-copy">
+                    <p className="eyebrow" style={{ color: "#fff", marginBottom: "8px" }}>
+                      TQMP brochure
+                    </p>
+                    <h3 style={{ color: "#fff" }}>{page.title}</h3>
+                  </div>
+                </div>
+              )}
+
+              {!page.image && (
+                <>
+                  <p className="eyebrow" style={{ marginBottom: 0 }}>
+                    {page.subtitle}
+                  </p>
+                  <h3>{page.title}</h3>
+                </>
+              )}
+
+              {page.image && <p className="eyebrow">{page.subtitle}</p>}
+
+              {page.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+
+              <ul className="check-list">
+                {page.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="brochure-controls">
+        <div className="brochure-control-row">
           <button
-            onClick={prevPage}
-            style={{
-              position: "absolute",
-              left: "20px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "rgba(255,255,255,0.1)",
-              border: "none",
-              color: "white",
-              width: "48px",
-              height: "48px",
-              borderRadius: "50%",
-              cursor: "pointer",
-              fontSize: "1.5rem",
-              zIndex: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background 0.2s",
-            }}
+            type="button"
+            className="control-button"
+            onClick={() => setSpreadIndex((current) => Math.max(current - 1, 0))}
+            disabled={spreadIndex === 0}
+            aria-label="Previous spread"
           >
             ‹
           </button>
-        )}
-
-        {/* Page display - using spread view */}
-        <div
-          style={{
-            display: "flex",
-            gap: "4px",
-            transform: `scale(${zoom})`,
-            transition: "transform 0.3s ease",
-            transformOrigin: "center center",
-          }}
-        >
-          {/* Left page */}
-          <div
-            style={{
-              width: "400px",
-              height: "560px",
-              background: "linear-gradient(135deg, #f5f5f5, #e8e8e8)",
-              borderRadius: "4px 0 0 4px",
-              boxShadow: "-4px 0 20px rgba(0,0,0,0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
-              <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>Page {currentPage * 2 + 1}</p>
-              <div
-                style={{
-                  width: "100%",
-                  height: "400px",
-                  background: "linear-gradient(180deg, #f0f0f0, #e0e0e0)",
-                  borderRadius: "8px",
-                  marginTop: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "3rem",
-                }}
-              >
-                📄
-              </div>
-            </div>
-            {/* Page fold effect */}
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: "20px",
-                background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.05))",
-              }}
-            />
-          </div>
-
-          {/* Right page */}
-          <div
-            style={{
-              width: "400px",
-              height: "560px",
-              background: "linear-gradient(135deg, #f8f8f8, #f0f0f0)",
-              borderRadius: "0 4px 4px 0",
-              boxShadow: "4px 0 20px rgba(0,0,0,0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
-              <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>Page {currentPage * 2 + 2}</p>
-              <div
-                style={{
-                  width: "100%",
-                  height: "400px",
-                  background: "linear-gradient(180deg, #f0f0f0, #e0e0e0)",
-                  borderRadius: "8px",
-                  marginTop: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "3rem",
-                }}
-              >
-                📄
-              </div>
-            </div>
-            {/* Page fold effect */}
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: "20px",
-                background: "linear-gradient(270deg, transparent, rgba(0,0,0,0.05))",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Next arrow */}
-        {currentPage < totalPages - 1 && (
+          <span className="control-chip">
+            Spread {spreadIndex + 1} / {totalSpreads}
+          </span>
           <button
-            onClick={nextPage}
-            style={{
-              position: "absolute",
-              right: "20px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "rgba(255,255,255,0.1)",
-              border: "none",
-              color: "white",
-              width: "48px",
-              height: "48px",
-              borderRadius: "50%",
-              cursor: "pointer",
-              fontSize: "1.5rem",
-              zIndex: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            type="button"
+            className="control-button"
+            onClick={() =>
+              setSpreadIndex((current) => Math.min(current + 1, totalSpreads - 1))
+            }
+            disabled={spreadIndex === totalSpreads - 1}
+            aria-label="Next spread"
           >
             ›
           </button>
-        )}
-      </div>
+        </div>
 
-      {/* Controls bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "16px",
-          padding: "16px",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <button onClick={prevPage} disabled={currentPage === 0}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", color: currentPage === 0 ? "#555" : "white", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "1.2rem" }}>
-          ‹
-        </button>
-
-        <span style={{ color: "white", fontSize: "0.85rem", minWidth: "80px", textAlign: "center" }}>
-          {currentPage + 1} / {totalPages}
-        </span>
-
-        <button onClick={nextPage} disabled={currentPage === totalPages - 1}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", color: currentPage === totalPages - 1 ? "#555" : "white", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "1.2rem" }}>
-          ›
-        </button>
-
-        <div style={{ width: "1px", height: "24px", background: "rgba(255,255,255,0.2)" }} />
-
-        <button onClick={zoomOut}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", padding: "8px 12px", borderRadius: "8px", cursor: "pointer" }}>
-          🔍−
-        </button>
-        <span style={{ color: "white", fontSize: "0.8rem" }}>{Math.round(zoom * 100)}%</span>
-        <button onClick={zoomIn}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", padding: "8px 12px", borderRadius: "8px", cursor: "pointer" }}>
-          🔍+
-        </button>
-
-        <div style={{ width: "1px", height: "24px", background: "rgba(255,255,255,0.2)" }} />
-
-        <button onClick={toggleFullscreen}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "white", padding: "8px 12px", borderRadius: "8px", cursor: "pointer" }}>
-          ⛶
-        </button>
+        <div className="brochure-control-row">
+          <button
+            type="button"
+            className="control-button"
+            onClick={() => setZoom((current) => Math.max(current - 0.15, 0.7))}
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <span className="control-chip">{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            className="control-button"
+            onClick={() => setZoom((current) => Math.min(current + 0.15, 1.6))}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button type="button" className="control-chip" onClick={toggleFullscreen}>
+            {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          </button>
+        </div>
       </div>
     </div>
   );

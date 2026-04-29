@@ -1,13 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 export interface CartItem {
+  lineId: string;
   id: string;
   name: string;
   category: string;
   size: string;
   thickness: string;
+  finish: string;
   price: number;
   quantity: number;
   image: string;
@@ -16,8 +18,8 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, qty: number) => void;
+  removeFromCart: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -26,40 +28,80 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const STORAGE_KEY = "tqmp-cart-items";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const storedItems = window.localStorage.getItem(STORAGE_KEY);
+      return storedItems ? (JSON.parse(storedItems) as CartItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const addToCart = useCallback((item: CartItem) => {
-    setItems((prev) => {
-      const existing = prev.find(
-        (i) => i.id === item.id && i.size === item.size && i.thickness === item.thickness
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
+
+  function addToCart(item: CartItem) {
+    setItems((currentItems) => {
+      const existingItem = currentItems.find(
+        (currentItem) => currentItem.lineId === item.lineId,
       );
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id && i.size === item.size && i.thickness === item.thickness
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
+
+      if (existingItem) {
+        return currentItems.map((currentItem) =>
+          currentItem.lineId === item.lineId
+            ? { ...currentItem, quantity: currentItem.quantity + item.quantity }
+            : currentItem,
         );
       }
-      return [...prev, item];
+
+      return [...currentItems, item];
     });
-  }, []);
+  }
 
-  const removeFromCart = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
+  function removeFromCart(lineId: string) {
+    setItems((currentItems) =>
+      currentItems.filter((currentItem) => currentItem.lineId !== lineId),
+    );
+  }
 
-  const updateQuantity = useCallback((id: string, qty: number) => {
-    if (qty < 1) return;
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
-  }, []);
+  function updateQuantity(lineId: string, quantity: number) {
+    if (quantity < 1) {
+      return;
+    }
 
-  const clearCart = useCallback(() => setItems([]), []);
+    setItems((currentItems) =>
+      currentItems.map((currentItem) =>
+        currentItem.lineId === lineId ? { ...currentItem, quantity } : currentItem,
+      ),
+    );
+  }
 
-  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  function clearCart() {
+    setItems([]);
+  }
+
+  const totalItems = items.reduce(
+    (runningTotal, currentItem) => runningTotal + currentItem.quantity,
+    0,
+  );
+  const totalPrice = items.reduce(
+    (runningTotal, currentItem) =>
+      runningTotal + currentItem.price * currentItem.quantity,
+    0,
+  );
 
   return (
     <CartContext.Provider
@@ -81,7 +123,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  const context = useContext(CartContext);
+
+  if (!context) {
+    throw new Error("useCart must be used within CartProvider");
+  }
+
+  return context;
 }
