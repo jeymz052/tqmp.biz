@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCart } from "./CartProvider";
 
 export default function CartDrawer() {
+  const router = useRouter();
   const {
     items,
     removeFromCart,
@@ -12,7 +14,13 @@ export default function CartDrawer() {
     totalPrice,
     isCartOpen,
     setIsCartOpen,
+    pointsBalance,
   } = useCart();
+
+  function goToCheckout() {
+    setIsCartOpen(false);
+    router.push("/home/checkout");
+  }
 
   if (!isCartOpen) {
     return null;
@@ -204,8 +212,34 @@ export default function CartDrawer() {
               </strong>
             </div>
 
-            <button type="button" className="btn-solid" style={{ width: "100%" }}>
-              Proceed to Inquiry Checkout
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "12px",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                background: "rgba(212, 168, 77, 0.14)",
+                border: "1px solid rgba(212, 168, 77, 0.32)",
+                fontSize: "0.86rem",
+                color: "rgba(23,23,23,0.78)",
+                fontWeight: 700,
+              }}
+            >
+              <span>TQMP Points balance</span>
+              <strong style={{ color: "var(--tqmp-red-deep)" }}>
+                {pointsBalance.toLocaleString()} pts
+              </strong>
+            </div>
+            <button
+              type="button"
+              className="btn-solid"
+              style={{ width: "100%" }}
+              onClick={goToCheckout}
+            >
+              Proceed to Payment
             </button>
             <button
               type="button"
